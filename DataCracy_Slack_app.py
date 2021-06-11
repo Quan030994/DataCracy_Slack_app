@@ -12,37 +12,37 @@ from datetime import datetime as dt
 import matplotlib.image as mpimg
 import math
 
+key = os.environ['DATABASE_URL']
+st.write(key)
 
-st.sidebar.markdown('## Key Information')
-SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ")
 
-DTC_GROUPS_URL = ('https://raw.githubusercontent.com/anhdanggit/atom-assignments/main/data/datacracy_groups.csv')
+# st.sidebar.markdown('## Key Information')
+# SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ")
 
-@st.cache
-def load_users_df():
-    # Slack API User Data
-    endpoint = "https://slack.com/api/users.list"
-    headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
-    response_json = requests.post(endpoint, headers=headers).json()
-    user_dat = response_json['members']
+# DTC_GROUPS_URL = ('https://raw.githubusercontent.com/anhdanggit/atom-assignments/main/data/datacracy_groups.csv')
 
-    # Convert to CSV
-    user_dict = {'user_id':[],'name':[],'display_name':[],'real_name':[],'title':[],'is_bot':[]}
-    for i in range(len(user_dat)):
-      user_dict['user_id'].append(user_dat[i]['id'])
-      user_dict['name'].append(user_dat[i]['name'])
-      user_dict['display_name'].append(user_dat[i]['profile']['display_name'])
-      user_dict['real_name'].append(user_dat[i]['profile']['real_name_normalized'])
-      user_dict['title'].append(user_dat[i]['profile']['title'])
-      user_dict['is_bot'].append(int(user_dat[i]['is_bot']))
-    user_df = pd.DataFrame(user_dict)
-    # Read dtc_group hosted in github
-    dtc_groups = pd.read_csv(DTC_GROUPS_URL)
-    user_df = user_df.merge(dtc_groups, how='left', on='name')
-    return user_df
+# @st.cache
+# def load_users_df():
+#     # Slack API User Data
+#     endpoint = "https://slack.com/api/users.list"
+#     headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
+#     response_json = requests.post(endpoint, headers=headers).json()
+#     user_dat = response_json['members']
 
-user_df = load_users_df()
-st.write(user_df)
+#     # Convert to CSV
+#     user_dict = {'user_id':[],'name':[],'display_name':[],'real_name':[],'title':[],'is_bot':[]}
+#     for i in range(len(user_dat)):
+#       user_dict['user_id'].append(user_dat[i]['id'])
+#       user_dict['name'].append(user_dat[i]['name'])
+#       user_dict['display_name'].append(user_dat[i]['profile']['display_name'])
+#       user_dict['real_name'].append(user_dat[i]['profile']['real_name_normalized'])
+#       user_dict['title'].append(user_dat[i]['profile']['title'])
+#       user_dict['is_bot'].append(int(user_dat[i]['is_bot']))
+#     user_df = pd.DataFrame(user_dict)
+#     # Read dtc_group hosted in github
+#     dtc_groups = pd.read_csv(DTC_GROUPS_URL)
+#     user_df = user_df.merge(dtc_groups, how='left', on='name')
+#     return user_df
 
 
 img1 = mpimg.imread('DataCracy.png')

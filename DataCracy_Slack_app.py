@@ -14,9 +14,9 @@ import math
 
 
 st.sidebar.markdown('## Key Information')
-SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ", 'xxxxxx')
+SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ")
 
-
+DTC_GROUPS_URL = ('https://raw.githubusercontent.com/anhdanggit/atom-assignments/main/data/datacracy_groups.csv')
 
 @st.cache
 def load_users_df():

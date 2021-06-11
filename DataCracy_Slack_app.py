@@ -11,12 +11,10 @@ import re
 from datetime import datetime as dt
 import matplotlib.image as mpimg
 import math
-from boto.s3.connection import S3Connection
 
 
-s3 = S3Connection( os.environ['TEST'])
-
-SLACK_BEARER_TOKEN = s3
+st.sidebar.markdown('## Key Information')
+SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ", 'xxxxxx')
 
 
 

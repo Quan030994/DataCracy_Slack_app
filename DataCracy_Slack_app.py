@@ -12,37 +12,85 @@ from datetime import datetime as dt
 import matplotlib.image as mpimg
 import math
 
-key = os.environ['DATABASE_URL']
-st.write(key)
+SLACK_BEARER_TOKEN = os.environ['KEY']
 
 
-# st.sidebar.markdown('## Key Information')
-# SLACK_BEARER_TOKEN = st.sidebar.text_input("Key: ")
+DTC_GROUPS_URL = ('https://raw.githubusercontent.com/anhdanggit/atom-assignments/main/data/datacracy_groups.csv')
+## User
+@st.cache
+def load_users_df():
+    # Slack API User Data
+    endpoint = "https://slack.com/api/users.list"
+    headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
+    response_json = requests.post(endpoint, headers=headers).json()
+    user_dat = response_json['members']
 
-# DTC_GROUPS_URL = ('https://raw.githubusercontent.com/anhdanggit/atom-assignments/main/data/datacracy_groups.csv')
+    # Convert to CSV
+    user_dict = {'user_id':[],'name':[],'display_name':[],'real_name':[],'title':[],'is_bot':[]}
+    for i in range(len(user_dat)):
+      user_dict['user_id'].append(user_dat[i]['id'])
+      user_dict['name'].append(user_dat[i]['name'])
+      user_dict['display_name'].append(user_dat[i]['profile']['display_name'])
+      user_dict['real_name'].append(user_dat[i]['profile']['real_name_normalized'])
+      user_dict['title'].append(user_dat[i]['profile']['title'])
+      user_dict['is_bot'].append(int(user_dat[i]['is_bot']))
+    user_df = pd.DataFrame(user_dict)
+    # Read dtc_group hosted in github
+    dtc_groups = pd.read_csv(DTC_GROUPS_URL)
+    user_df = user_df.merge(dtc_groups, how='left', on='name')
+    return user_df
+## Channel
+@st.cache
+def load_channel_df():
+    endpoint2 = "https://slack.com/api/conversations.list"
+    data = {'types': 'public_channel,private_channel'} # -> CHECK: API Docs https://api.slack.com/methods/conversations.list/test
+    headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
+    response_json = requests.post(endpoint2, headers=headers, data=data).json()
+    channel_dat = response_json['channels']
+    channel_dict = {'channel_id':[], 'channel_name':[], 'is_channel':[],'creator':[],'created_at':[],'topics':[],'purpose':[],'num_members':[]}
+    for i in range(len(channel_dat)):
+        channel_dict['channel_id'].append(channel_dat[i]['id'])
+        channel_dict['channel_name'].append(channel_dat[i]['name'])
+        channel_dict['is_channel'].append(channel_dat[i]['is_channel'])
+        channel_dict['creator'].append(channel_dat[i]['creator'])
+        channel_dict['created_at'].append(dt.fromtimestamp(float(channel_dat[i]['created'])))
+        channel_dict['topics'].append(channel_dat[i]['topic']['value'])
+        channel_dict['purpose'].append(channel_dat[i]['purpose']['value'])
+        channel_dict['num_members'].append(channel_dat[i]['num_members'])
+    channel_df = pd.DataFrame(channel_dict)
+    return channel_df
 
-# @st.cache
-# def load_users_df():
-#     # Slack API User Data
-#     endpoint = "https://slack.com/api/users.list"
-#     headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
-#     response_json = requests.post(endpoint, headers=headers).json()
-#     user_dat = response_json['members']
+## Message Channel
 
-#     # Convert to CSV
-#     user_dict = {'user_id':[],'name':[],'display_name':[],'real_name':[],'title':[],'is_bot':[]}
-#     for i in range(len(user_dat)):
-#       user_dict['user_id'].append(user_dat[i]['id'])
-#       user_dict['name'].append(user_dat[i]['name'])
-#       user_dict['display_name'].append(user_dat[i]['profile']['display_name'])
-#       user_dict['real_name'].append(user_dat[i]['profile']['real_name_normalized'])
-#       user_dict['title'].append(user_dat[i]['profile']['title'])
-#       user_dict['is_bot'].append(int(user_dat[i]['is_bot']))
-#     user_df = pd.DataFrame(user_dict)
-#     # Read dtc_group hosted in github
-#     dtc_groups = pd.read_csv(DTC_GROUPS_URL)
-#     user_df = user_df.merge(dtc_groups, how='left', on='name')
-#     return user_df
+@st.cache(allow_output_mutation=True)
+def load_msg_dict():
+    endpoint3 = "https://slack.com/api/conversations.history"
+    headers = {"Authorization": "Bearer {}".format(SLACK_BEARER_TOKEN)}
+    msg_dict = {'channel_id':[],'msg_id':[], 'msg_ts':[], 'user_id':[], 'latest_reply':[],'reply_user_count':[],'reply_users':[],'github_link':[],'text':[]}
+    for channel_id, channel_name in zip(channel_df['channel_id'], channel_df['channel_name']):
+        print('Channel ID: {} - Channel Name: {}'.format(channel_id, channel_name))
+        try:
+            data = {"channel": channel_id}
+            response_json = requests.post(endpoint3, data=data, headers=headers).json()
+            msg_ls = response_json['messages']
+            for i in range(len(msg_ls)):
+                if 'client_msg_id' in msg_ls[i].keys():
+                    msg_dict['channel_id'].append(channel_id)
+                    msg_dict['msg_id'].append(msg_ls[i]['client_msg_id'])
+                    msg_dict['msg_ts'].append(dt.fromtimestamp(float(msg_ls[i]['ts'])))
+                    msg_dict['latest_reply'].append(dt.fromtimestamp(float(msg_ls[i]['latest_reply'] if 'latest_reply' in msg_ls[i].keys() else 0))) ## -> No reply: 1970-01-01
+                    msg_dict['user_id'].append(msg_ls[i]['user'])
+                    msg_dict['reply_user_count'].append(msg_ls[i]['reply_users_count'] if 'reply_users_count' in msg_ls[i].keys() else 0)
+                    msg_dict['reply_users'].append(msg_ls[i]['reply_users'] if 'reply_users' in msg_ls[i].keys() else 0)
+                    msg_dict['text'].append(msg_ls[i]['text'] if 'text' in msg_ls[i].keys() else 0)
+                    ## -> Censor message contains tokens
+                    text = msg_ls[i]['text']
+                    github_link = re.findall('(?:https?://)?(?:www[.])?github[.]com/[\w-]+/?', text)
+                    msg_dict['github_link'].append(github_link[0] if len(github_link) > 0 else None)
+        except:
+            print('====> '+ str(response_json))
+    msg_df = pd.DataFrame(msg_dict)
+    return msg_df
 
 
 img1 = mpimg.imread('DataCracy.png')
@@ -84,11 +132,11 @@ def process_msg_data(msg_df, user_df, channel_df):
 
 
 # Table data
-user_df = pd.read_csv('user_df.csv')
-channel_df = pd.read_csv('channel_df.csv')
-msg_df = pd.read_csv('msg_df.csv')
+user_df = load_users_df()
+channel_df = load_channel_df()
+msg_df = load_msg_dict()
 
-channel_df['created_at'] = pd.to_datetime(channel_df['created_at'])
+#channel_df['created_at'] = pd.to_datetime(channel_df['created_at'])
 
 # Process data
 msg_process_df = process_msg_data(msg_df, user_df, channel_df)

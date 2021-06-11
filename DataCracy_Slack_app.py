@@ -12,6 +12,17 @@ from datetime import datetime as dt
 import math
 
 
+img1 = mpimg.imread('DataCracy.png')
+st.image(img1, width = 500)
+
+st.write("""
+# Welcome to Dashboard of DataCracy 
+
+### Made by : **Nguyễn Trần Quân**. 
+You can come across him at [Quan Nguyen](https://github.com/Quan030994/atom-assignments)
+
+""")
+
 def process_msg_data(msg_df, user_df, channel_df):
     ## Extract 2 reply_users
     msg_df['reply_user1'] = msg_df['reply_users'].apply(lambda x: x[0] if x != 0 else '')

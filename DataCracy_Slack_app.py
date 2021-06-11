@@ -14,7 +14,7 @@ import math
 from boto.s3.connection import S3Connection
 
 
-s3 = S3Connection(os.environ['TEST'])
+s3 = S3Connection(os.environ['REACT_APP_WEATHER_API_KEY'], os.environ['TEST'])
 st.write(s3)
 
 

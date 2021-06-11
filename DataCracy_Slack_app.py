@@ -11,6 +11,11 @@ import re
 from datetime import datetime as dt
 import matplotlib.image as mpimg
 import math
+from boto.s3.connection import S3Connection
+
+
+s3 = S3Connection(os.environ['TEST'])
+st.write(s3)
 
 
 img1 = mpimg.imread('DataCracy.png')

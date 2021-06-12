@@ -355,6 +355,7 @@ else:
     sns.set(style='darkgrid', font_scale=1.5, rc={"figure.figsize": [14, 6]})
     sns.countplot(x='dayofweek', hue='channel_name', data=submit_df.loc[last_submit_df])
     plt.title('The distribution submitted of the assignment between the days of the week')
+    plt.legend(loc='upper right')
     st.pyplot()
 
     st.markdown("***")
@@ -362,7 +363,7 @@ else:
     sns.set(style='darkgrid', font_scale=1.5, rc={"figure.figsize": [14, 6]})
     sns.countplot(x='timepoint_of_the_day', hue='channel_name', data=submit_df.loc[last_submit_df])
     plt.title('The distribution submitted of the assignment at the time points of the day')
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper center')
     st.pyplot()
 
 

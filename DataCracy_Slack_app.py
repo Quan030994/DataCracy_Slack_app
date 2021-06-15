@@ -195,8 +195,8 @@ learner_stat = pd.merge(user_df[user_df.DataCracy_role.notnull() & user_df.DataC
 learner_stat = learner_stat.drop('submit_name', axis= 1)
 learner_stat = learner_stat.fillna(0)
 
-st.markdown('### Below is information about the students assignments at **{}**'\
-            .format(channel_df[channel_df.channel_name.str.contains('atom-week')].loc[channel_df.created_at.idxmax()]['channel_name']))
+channel_last_idx = channel_df[channel_df.channel_name.str.contains('atom-week')].created_at.idxmax()
+st.markdown('### Below is information about the students assignments at **{}**'.format(channel_df.loc[channel_last_idx,'channel_name']))
 st.write("""
 #### Data Fields:
 1. User_id: User ID when logging into the DataCracy workspace. This is a key that unique.
